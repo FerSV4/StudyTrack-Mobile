@@ -1,5 +1,13 @@
 package com.example.proyectofinal.ui.screens
 
+import android.Manifest
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.net.Uri
+import android.os.Build
+import android.provider.Settings
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -15,24 +23,58 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.navigation.NavController // IMPORTANTE
+import androidx.core.content.ContextCompat
+import androidx.navigation.NavController
 import com.example.proyectofinal.data.SettingsManager
-import com.example.proyectofinal.ui.components.BottomNavBar // IMPORTANTE
+import com.example.proyectofinal.ui.components.BottomNavBar
 import com.example.proyectofinal.ui.theme.BackgroundLight
 import com.example.proyectofinal.ui.theme.PrimaryBlue
 import com.example.proyectofinal.ui.theme.WhiteCard
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(navController: NavController) {
-    // PATRÓN OBSERVER
-    // SINGLETON
     val settingsState by SettingsManager.settingsState.collectAsState()
 
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    fun openAppSettings() {
+        val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+            data = Uri.fromParts("package", context.packageName, null)
+        }
+        context.startActivity(intent)
+    }
+
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            SettingsManager.togglePushNotifications(true)
+        } else {
+            SettingsManager.togglePushNotifications(false)
+
+            scope.launch {
+                val result = snackbarHostState.showSnackbar(
+                    message = "Se requiere permiso para notificaciones.",
+                    actionLabel = "Configurar",
+                    duration = SnackbarDuration.Long
+                )
+                if (result == SnackbarResult.ActionPerformed) {
+                    openAppSettings()
+                }
+            }
+        }
+    }
+
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = { Text("Ajustes", color = Color.White, fontWeight = FontWeight.Bold) },
@@ -57,17 +99,36 @@ fun SettingsScreen(navController: NavController) {
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-
             ProfileCard(name = settingsState.userName, email = settingsState.userEmail)
 
-
             SettingsSectionCard(title = "Notificaciones", icon = Icons.Default.Notifications) {
+
                 SettingsSwitchRow(
                     label = "Notificaciones push",
                     subLabel = "Se notificado de tus tareas",
                     checked = settingsState.notificationsPush,
-                    onCheckedChange = { SettingsManager.togglePushNotifications(it) } //SINGLETON
+                    onCheckedChange = { shouldEnable ->
+                        if (shouldEnable) {
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                                val hasPermission = ContextCompat.checkSelfPermission(
+                                    context,
+                                    Manifest.permission.POST_NOTIFICATIONS
+                                ) == PackageManager.PERMISSION_GRANTED
+
+                                if (hasPermission) {
+                                    SettingsManager.togglePushNotifications(true)
+                                } else {
+                                    permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                                }
+                            } else {
+                                SettingsManager.togglePushNotifications(true)
+                            }
+                        } else {
+                            SettingsManager.togglePushNotifications(false)
+                        }
+                    }
                 )
+
                 SettingsSwitchRow(
                     label = "Emails recordatorio",
                     subLabel = "Avisos por email",
@@ -82,13 +143,12 @@ fun SettingsScreen(navController: NavController) {
                 )
             }
 
-            //Apariencia
             SettingsSectionCard(title = "Apariencia", icon = Icons.Default.DarkMode) {
                 SettingsSwitchRow(
                     label = "Modo oscuro",
                     subLabel = "Usar modo oscuro",
                     checked = settingsState.isDarkMode,
-                    onCheckedChange = { SettingsManager.toggleDarkMode(it) } //SINGLETON
+                    onCheckedChange = { SettingsManager.toggleDarkMode(it) }
                 )
             }
 
@@ -115,7 +175,6 @@ fun SettingsScreen(navController: NavController) {
         }
     }
 }
-
 
 @Composable
 fun ProfileCard(name: String, email: String) {
