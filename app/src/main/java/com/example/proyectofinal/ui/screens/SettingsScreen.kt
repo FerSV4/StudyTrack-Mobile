@@ -1,13 +1,5 @@
 package com.example.proyectofinal.ui.screens
 
-import android.Manifest
-import android.content.Intent
-import android.content.pm.PackageManager
-import android.net.Uri
-import android.os.Build
-import android.provider.Settings
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -23,13 +15,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.core.content.ContextCompat
 import androidx.navigation.NavController
-import com.example.proyectofinal.data.SettingsManager
+import com.example.proyectofinal.data.UserPreferencesRepository
 import com.example.proyectofinal.ui.components.BottomNavBar
 import com.example.proyectofinal.ui.theme.BackgroundLight
 import com.example.proyectofinal.ui.theme.PrimaryBlue
@@ -38,43 +28,20 @@ import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsScreen(navController: NavController) {
-    val settingsState by SettingsManager.settingsState.collectAsState()
+fun SettingsScreen(
+    navController: NavController,
+    userPrefs: UserPreferencesRepository
+) {
+    val settingsState = remember { mutableStateOf(false) }
 
-    val context = LocalContext.current
+    val isDarkMode by userPrefs.isDarkMode.collectAsState(initial = false)
+    val notificationsEnabled by userPrefs.notificationsEnabled.collectAsState(initial = false)
+    val userName by userPrefs.userName.collectAsState(initial = "Usuario")
+    val userEmail by userPrefs.userEmail.collectAsState(initial = "Cargando...")
+
     val scope = rememberCoroutineScope()
-    val snackbarHostState = remember { SnackbarHostState() }
-
-    fun openAppSettings() {
-        val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-            data = Uri.fromParts("package", context.packageName, null)
-        }
-        context.startActivity(intent)
-    }
-
-    val permissionLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.RequestPermission()
-    ) { isGranted ->
-        if (isGranted) {
-            SettingsManager.togglePushNotifications(true)
-        } else {
-            SettingsManager.togglePushNotifications(false)
-
-            scope.launch {
-                val result = snackbarHostState.showSnackbar(
-                    message = "Se requiere permiso para notificaciones.",
-                    actionLabel = "Configurar",
-                    duration = SnackbarDuration.Long
-                )
-                if (result == SnackbarResult.ActionPerformed) {
-                    openAppSettings()
-                }
-            }
-        }
-    }
 
     Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = { Text("Ajustes", color = Color.White, fontWeight = FontWeight.Bold) },
@@ -99,72 +66,41 @@ fun SettingsScreen(navController: NavController) {
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            ProfileCard(name = settingsState.userName, email = settingsState.userEmail)
+            ProfileCard(name = userName, email = userEmail)
 
             SettingsSectionCard(title = "Notificaciones", icon = Icons.Default.Notifications) {
-
                 SettingsSwitchRow(
                     label = "Notificaciones push",
-                    subLabel = "Se notificado de tus tareas",
-                    checked = settingsState.notificationsPush,
-                    onCheckedChange = { shouldEnable ->
-                        if (shouldEnable) {
-                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                                val hasPermission = ContextCompat.checkSelfPermission(
-                                    context,
-                                    Manifest.permission.POST_NOTIFICATIONS
-                                ) == PackageManager.PERMISSION_GRANTED
-
-                                if (hasPermission) {
-                                    SettingsManager.togglePushNotifications(true)
-                                } else {
-                                    permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-                                }
-                            } else {
-                                SettingsManager.togglePushNotifications(true)
-                            }
-                        } else {
-                            SettingsManager.togglePushNotifications(false)
-                        }
+                    subLabel = "Recibir alertas de tareas",
+                    checked = notificationsEnabled,
+                    onCheckedChange = { isChecked ->
+                        scope.launch { userPrefs.saveNotifications(isChecked) }
                     }
-                )
-
-                SettingsSwitchRow(
-                    label = "Emails recordatorio",
-                    subLabel = "Avisos por email",
-                    checked = settingsState.notificationsEmail,
-                    onCheckedChange = { SettingsManager.updateSetting { s -> s.copy(notificationsEmail = it) } }
-                )
-                SettingsSwitchRow(
-                    label = "Alerta de examenes",
-                    subLabel = "Recordatorios 1 semana antes",
-                    checked = settingsState.alertsExams,
-                    onCheckedChange = { SettingsManager.updateSetting { s -> s.copy(alertsExams = it) } }
                 )
             }
 
             SettingsSectionCard(title = "Apariencia", icon = Icons.Default.DarkMode) {
                 SettingsSwitchRow(
                     label = "Modo oscuro",
-                    subLabel = "Usar modo oscuro",
-                    checked = settingsState.isDarkMode,
-                    onCheckedChange = { SettingsManager.toggleDarkMode(it) }
+                    subLabel = "Usar tema oscuro",
+                    checked = isDarkMode,
+                    onCheckedChange = { isChecked ->
+                        scope.launch { userPrefs.saveDarkMode(isChecked) }
+                    }
                 )
             }
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            Button(
-                onClick = {},
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue),
-                shape = RoundedCornerShape(12.dp)
-            ) {
-                Text("Guardar Cambios", modifier = Modifier.padding(8.dp))
-            }
-
             OutlinedButton(
-                onClick = { },
+                onClick = {
+                    scope.launch {
+                        userPrefs.saveUserEmail("")
+                        navController.navigate("login") {
+                            popUpTo(0) // Borra todo el historial
+                        }
+                    }
+                },
                 modifier = Modifier.fillMaxWidth(),
                 colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.Red),
                 border = androidx.compose.foundation.BorderStroke(1.dp, Color.Red),
@@ -199,12 +135,7 @@ fun ProfileCard(name: String, email: String) {
                 Column {
                     Text(text = name, fontWeight = FontWeight.Bold, fontSize = 18.sp)
                     Text(text = email, color = Color.Gray, fontSize = 14.sp)
-                    Text(text = "Ingeniería de Software", color = PrimaryBlue, fontSize = 12.sp)
                 }
-            }
-            Spacer(modifier = Modifier.height(16.dp))
-            OutlinedButton(onClick = {}, shape = RoundedCornerShape(50)) {
-                Text("Editar perfil")
             }
         }
     }
@@ -212,15 +143,10 @@ fun ProfileCard(name: String, email: String) {
 
 @Composable
 fun SettingsSectionCard(title: String, icon: ImageVector, content: @Composable ColumnScope.() -> Unit) {
-    Card(
-        colors = CardDefaults.cardColors(containerColor = WhiteCard),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        shape = RoundedCornerShape(16.dp),
-        modifier = Modifier.fillMaxWidth()
-    ) {
+    Card(colors = CardDefaults.cardColors(containerColor = WhiteCard), shape = RoundedCornerShape(16.dp), modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(icon, contentDescription = null, tint = PrimaryBlue)
+                Icon(icon, null, tint = PrimaryBlue)
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(title, fontWeight = FontWeight.Bold, color = PrimaryBlue)
             }
@@ -232,19 +158,13 @@ fun SettingsSectionCard(title: String, icon: ImageVector, content: @Composable C
 
 @Composable
 fun SettingsSwitchRow(label: String, subLabel: String, checked: Boolean, onCheckedChange: (Boolean) -> Unit) {
-    Row(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
+    Row(modifier = Modifier
+        .fillMaxWidth()
+        .padding(vertical = 8.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
         Column(modifier = Modifier.weight(1f)) {
             Text(label, fontWeight = FontWeight.Medium)
             Text(subLabel, style = MaterialTheme.typography.bodySmall, color = Color.Gray)
         }
-        Switch(
-            checked = checked,
-            onCheckedChange = onCheckedChange,
-            colors = SwitchDefaults.colors(checkedThumbColor = Color.White, checkedTrackColor = PrimaryBlue)
-        )
+        Switch(checked = checked, onCheckedChange = onCheckedChange, colors = SwitchDefaults.colors(checkedThumbColor = Color.White, checkedTrackColor = PrimaryBlue))
     }
 }
