@@ -1,7 +1,6 @@
 package com.example.proyectofinal.ui.screens
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -23,21 +22,27 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import com.example.proyectofinal.data.UserPreferencesRepository // Importante
 import com.example.proyectofinal.ui.theme.BackgroundLight
 import com.example.proyectofinal.ui.theme.PrimaryBlue
 import com.example.proyectofinal.ui.theme.WhiteCard
+import kotlinx.coroutines.launch // Importante para corrutinas
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun LoginScreen(navController: NavController) {
+fun LoginScreen(
+    navController: NavController,
+    userPrefs: UserPreferencesRepository
+) {
 
     var isRegistering by remember { mutableStateOf(false) }
-
 
     var name by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
+
+    val scope = rememberCoroutineScope()
 
     Scaffold(
         containerColor = BackgroundLight
@@ -79,7 +84,7 @@ fun LoginScreen(navController: NavController) {
 
                 Card(
                     modifier = Modifier
-                        .fillMaxWidth(0.85f) // Ocupa el 85% del ancho
+                        .fillMaxWidth(0.85f)
                         .padding(bottom = 20.dp),
                     colors = CardDefaults.cardColors(containerColor = WhiteCard),
                     elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
@@ -146,8 +151,16 @@ fun LoginScreen(navController: NavController) {
 
                         Button(
                             onClick = {
-                                navController.navigate("dashboard") {
-                                    popUpTo("login") { inclusive = true }
+                                scope.launch {
+                                    userPrefs.saveUserEmail(email)
+
+                                    if (name.isNotEmpty()) {
+                                        userPrefs.saveUserName(name)
+                                    }
+
+                                    navController.navigate("dashboard") {
+                                        popUpTo("login") { inclusive = true }
+                                    }
                                 }
                             },
                             modifier = Modifier
