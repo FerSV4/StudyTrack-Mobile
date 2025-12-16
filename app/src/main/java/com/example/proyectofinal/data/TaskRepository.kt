@@ -2,7 +2,7 @@ package com.example.proyectofinal.data
 
 import com.example.proyectofinal.model.Task
 import io.github.jan.supabase.postgrest.from
-
+//Repositorio de tareas
 class TaskRepository {
 
     suspend fun getTasks(email: String): List<Task> {

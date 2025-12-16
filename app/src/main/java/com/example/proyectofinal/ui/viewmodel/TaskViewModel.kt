@@ -20,7 +20,6 @@ class TaskViewModel(
 ) : ViewModel() {
 
     private val repository = TaskRepository()
-
     private val _tasks = MutableStateFlow<List<Task>>(emptyList())
     val tasks: StateFlow<List<Task>> = _tasks.asStateFlow()
 
