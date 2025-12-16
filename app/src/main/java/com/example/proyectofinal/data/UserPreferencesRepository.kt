@@ -49,7 +49,7 @@ class UserPreferencesRepository(private val context: Context) {
             preferences[USER_EMAIL] = email
         }
     }
-
+    
     suspend fun saveUserName(name: String) {
         context.dataStore.edit { preferences ->
             preferences[USER_NAME] = name
@@ -67,4 +67,5 @@ class UserPreferencesRepository(private val context: Context) {
             preferences[NOTIFICATIONS_ENABLED] = enabled
         }
     }
+
 }

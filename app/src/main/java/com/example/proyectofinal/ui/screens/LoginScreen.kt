@@ -1,32 +1,31 @@
 package com.example.proyectofinal.ui.screens
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Email
-import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Visibility
-import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import com.example.proyectofinal.data.UserPreferencesRepository // Importante
-import com.example.proyectofinal.ui.theme.BackgroundLight
+import com.example.proyectofinal.data.UserPreferencesRepository
 import com.example.proyectofinal.ui.theme.PrimaryBlue
-import com.example.proyectofinal.ui.theme.WhiteCard
-import kotlinx.coroutines.launch // Importante para corrutinas
+import com.example.proyectofinal.ui.viewmodel.LoginViewModel
+import com.example.proyectofinal.ui.viewmodel.LoginViewModelFactory
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Lock
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -34,166 +33,174 @@ fun LoginScreen(
     navController: NavController,
     userPrefs: UserPreferencesRepository
 ) {
+    val viewModel: LoginViewModel = viewModel(factory = LoginViewModelFactory(userPrefs))
 
-    var isRegistering by remember { mutableStateOf(false) }
+    val isLoading by viewModel.isLoading.collectAsState()
+    val errorMsg by viewModel.errorMsg.collectAsState()
+    val loginSuccess by viewModel.loginSuccess.collectAsState()
 
-    var name by remember { mutableStateOf("") }
+    var isRegisterMode by remember { mutableStateOf(false) }
+
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
-    var passwordVisible by remember { mutableStateOf(false) }
+    var fullName by remember { mutableStateOf("") }
 
-    val scope = rememberCoroutineScope()
+    LaunchedEffect(loginSuccess) {
+        if (loginSuccess) {
+            navController.navigate("dashboard") {
+                popUpTo("login") { inclusive = true }
+            }
+        }
+    }
 
-    Scaffold(
-        containerColor = BackgroundLight
-    ) { padding ->
+    Scaffold { padding ->
         Box(
             modifier = Modifier
-                .fillMaxSize()
                 .padding(padding)
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background),
+            contentAlignment = Alignment.Center
         ) {
-
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(300.dp)
-                    .background(
-                        color = PrimaryBlue,
-                        shape = RoundedCornerShape(bottomStart = 60.dp, bottomEnd = 60.dp)
-                    )
-            )
-
             Column(
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
-                Text(
-                    text = "StudyTrack",
-                    fontSize = 32.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White
-                )
-                Text(
-                    text = "Tu compañero académico",
-                    fontSize = 16.sp,
-                    color = Color.White.copy(alpha = 0.8f)
+                Image(
+                    imageVector = Icons.Default.Lock,
+                    contentDescription = "Logo",
+                    modifier = Modifier.size(80.dp),
+                    colorFilter = ColorFilter.tint(PrimaryBlue),
+                    contentScale = ContentScale.Fit
                 )
 
-                Spacer(modifier = Modifier.height(40.dp))
+                Spacer(modifier = Modifier.height(32.dp))
+
+                Text(
+                    text = if (isRegisterMode) "Crear Cuenta" else "Bienvenido",
+                    fontSize = 28.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = PrimaryBlue
+                )
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(Color.LightGray.copy(alpha = 0.2f))
+                        .padding(4.dp)
+                ) {
+                    TabButton(
+                        text = "Ingresar",
+                        isSelected = !isRegisterMode,
+                        modifier = Modifier.weight(1f)
+                    ) { isRegisterMode = false }
+
+                    TabButton(
+                        text = "Registrarse",
+                        isSelected = isRegisterMode,
+                        modifier = Modifier.weight(1f)
+                    ) { isRegisterMode = true }
+                }
+
+                Spacer(modifier = Modifier.height(24.dp))
 
                 Card(
-                    modifier = Modifier
-                        .fillMaxWidth(0.85f)
-                        .padding(bottom = 20.dp),
-                    colors = CardDefaults.cardColors(containerColor = WhiteCard),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
-                    shape = RoundedCornerShape(24.dp)
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    elevation = CardDefaults.cardElevation(4.dp)
                 ) {
-                    Column(
-                        modifier = Modifier.padding(24.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Text(
-                            text = if (isRegistering) "Crear Cuenta" else "Bienvenido",
-                            fontSize = 24.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = PrimaryBlue
-                        )
+                    Column(modifier = Modifier.padding(16.dp)) {
 
-                        Spacer(modifier = Modifier.height(24.dp))
-
-                        if (isRegistering) {
+                        if (isRegisterMode) {
                             OutlinedTextField(
-                                value = name,
-                                onValueChange = { name = it },
-                                label = { Text("Nombre completo") },
-                                leadingIcon = { Icon(Icons.Default.Person, contentDescription = null, tint = PrimaryBlue) },
+                                value = fullName,
+                                onValueChange = { fullName = it },
+                                label = { Text("Nombre Completo") },
                                 modifier = Modifier.fillMaxWidth(),
-                                shape = RoundedCornerShape(12.dp),
-                                singleLine = true
+                                singleLine = true,
+                                shape = RoundedCornerShape(12.dp)
                             )
-                            Spacer(modifier = Modifier.height(16.dp))
+                            Spacer(modifier = Modifier.height(12.dp))
                         }
 
                         OutlinedTextField(
                             value = email,
                             onValueChange = { email = it },
-                            label = { Text("Correo universitario") },
-                            leadingIcon = { Icon(Icons.Default.Email, contentDescription = null, tint = PrimaryBlue) },
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                            label = { Text("Correo Electrónico") },
                             modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(12.dp),
-                            singleLine = true
+                            singleLine = true,
+                            shape = RoundedCornerShape(12.dp)
                         )
-
-                        Spacer(modifier = Modifier.height(16.dp))
+                        Spacer(modifier = Modifier.height(12.dp))
 
                         OutlinedTextField(
                             value = password,
                             onValueChange = { password = it },
                             label = { Text("Contraseña") },
-                            leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null, tint = PrimaryBlue) },
-                            trailingIcon = {
-                                val image = if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff
-                                IconButton(onClick = { passwordVisible = !passwordVisible }) {
-                                    Icon(image, contentDescription = null)
-                                }
-                            },
-                            visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                             modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(12.dp),
-                            singleLine = true
+                            singleLine = true,
+                            visualTransformation = PasswordVisualTransformation(),
+                            shape = RoundedCornerShape(12.dp)
                         )
+
+                        if (errorMsg != null) {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = errorMsg ?: "",
+                                color = Color.Red,
+                                fontSize = 14.sp,
+                                modifier = Modifier.align(Alignment.CenterHorizontally)
+                            )
+                        }
 
                         Spacer(modifier = Modifier.height(24.dp))
 
                         Button(
                             onClick = {
-                                scope.launch {
-                                    userPrefs.saveUserEmail(email)
-
-                                    if (name.isNotEmpty()) {
-                                        userPrefs.saveUserName(name)
-                                    }
-
-                                    navController.navigate("dashboard") {
-                                        popUpTo("login") { inclusive = true }
-                                    }
+                                if (isRegisterMode) {
+                                    viewModel.register(fullName, email, password)
+                                } else {
+                                    viewModel.login(email, password)
                                 }
                             },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(50.dp),
+                            modifier = Modifier.fillMaxWidth().height(50.dp),
+                            shape = RoundedCornerShape(12.dp),
                             colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue),
-                            shape = RoundedCornerShape(12.dp)
+                            enabled = !isLoading
                         ) {
-                            Text(
-                                text = if (isRegistering) "Registrarse" else "Iniciar Sesión",
-                                fontSize = 16.sp,
-                                fontWeight = FontWeight.Bold
-                            )
+                            if (isLoading) {
+                                CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
+                            } else {
+                                Text(if (isRegisterMode) "Registrarse" else "Ingresar", fontSize = 16.sp)
+                            }
                         }
-                    }
-                }
-
-                Row(
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = if (isRegistering) "¿Ya tienes cuenta?" else "¿No tienes cuenta?",
-                        color = Color.Gray
-                    )
-                    TextButton(onClick = { isRegistering = !isRegistering }) {
-                        Text(
-                            text = if (isRegistering) "Inicia Sesión" else "Regístrate",
-                            color = PrimaryBlue,
-                            fontWeight = FontWeight.Bold
-                        )
                     }
                 }
             }
         }
+    }
+}
+
+@Composable
+fun TabButton(text: String, isSelected: Boolean, modifier: Modifier = Modifier, onClick: () -> Unit) {
+    Box(
+        modifier = modifier
+            .clip(RoundedCornerShape(8.dp))
+            .background(if (isSelected) MaterialTheme.colorScheme.surface else Color.Transparent)
+            .clickable { onClick() }
+            .padding(vertical = 12.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = text,
+            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+            color = if (isSelected) PrimaryBlue else Color.Gray
+        )
     }
 }
