@@ -21,9 +21,7 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.proyectofinal.data.UserPreferencesRepository
 import com.example.proyectofinal.ui.components.BottomNavBar
-import com.example.proyectofinal.ui.theme.BackgroundLight
 import com.example.proyectofinal.ui.theme.PrimaryBlue
-import com.example.proyectofinal.ui.theme.WhiteCard
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -61,7 +59,7 @@ fun SettingsScreen(
             modifier = Modifier
                 .padding(padding)
                 .fillMaxSize()
-                .background(BackgroundLight)
+                .background(MaterialTheme.colorScheme.background)
                 .verticalScroll(rememberScrollState())
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -102,7 +100,10 @@ fun SettingsScreen(
                     }
                 },
                 modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.Red),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    contentColor = Color.Red,
+                    containerColor = Color.Transparent
+                ),
                 border = androidx.compose.foundation.BorderStroke(1.dp, Color.Red),
                 shape = RoundedCornerShape(12.dp)
             ) {
@@ -115,7 +116,7 @@ fun SettingsScreen(
 @Composable
 fun ProfileCard(name: String, email: String) {
     Card(
-        colors = CardDefaults.cardColors(containerColor = WhiteCard),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         shape = RoundedCornerShape(16.dp),
         modifier = Modifier.fillMaxWidth()
@@ -133,8 +134,17 @@ fun ProfileCard(name: String, email: String) {
                 }
                 Spacer(modifier = Modifier.width(16.dp))
                 Column {
-                    Text(text = name, fontWeight = FontWeight.Bold, fontSize = 18.sp)
-                    Text(text = email, color = Color.Gray, fontSize = 14.sp)
+                    Text(
+                        text = name,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 18.sp,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Text(
+                        text = email,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                        fontSize = 14.sp
+                    )
                 }
             }
         }
@@ -143,7 +153,11 @@ fun ProfileCard(name: String, email: String) {
 
 @Composable
 fun SettingsSectionCard(title: String, icon: ImageVector, content: @Composable ColumnScope.() -> Unit) {
-    Card(colors = CardDefaults.cardColors(containerColor = WhiteCard), shape = RoundedCornerShape(16.dp), modifier = Modifier.fillMaxWidth()) {
+    Card(
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        shape = RoundedCornerShape(16.dp),
+        modifier = Modifier.fillMaxWidth()
+    ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(icon, null, tint = PrimaryBlue)
@@ -162,9 +176,27 @@ fun SettingsSwitchRow(label: String, subLabel: String, checked: Boolean, onCheck
         .fillMaxWidth()
         .padding(vertical = 8.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
         Column(modifier = Modifier.weight(1f)) {
-            Text(label, fontWeight = FontWeight.Medium)
-            Text(subLabel, style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+            Text(
+                text = label,
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Text(
+                text = subLabel,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+            )
         }
-        Switch(checked = checked, onCheckedChange = onCheckedChange, colors = SwitchDefaults.colors(checkedThumbColor = Color.White, checkedTrackColor = PrimaryBlue))
+        Switch(
+            checked = checked,
+            onCheckedChange = onCheckedChange,
+            colors = SwitchDefaults.colors(
+                checkedThumbColor = Color.White,
+                checkedTrackColor = PrimaryBlue,
+                // Aseguramos visibilidad en modo oscuro cuando está desactivado
+                uncheckedThumbColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                uncheckedTrackColor = MaterialTheme.colorScheme.surfaceVariant
+            )
+        )
     }
 }
