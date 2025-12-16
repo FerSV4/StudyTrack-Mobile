@@ -18,7 +18,6 @@ import kotlinx.coroutines.launch
 class TaskViewModel(
     private val userPrefs: UserPreferencesRepository
 ) : ViewModel() {
-
     private val repository = TaskRepository()
     private val _tasks = MutableStateFlow<List<Task>>(emptyList())
     val tasks: StateFlow<List<Task>> = _tasks.asStateFlow()

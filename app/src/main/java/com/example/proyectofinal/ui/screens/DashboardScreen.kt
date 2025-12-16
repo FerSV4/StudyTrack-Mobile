@@ -50,7 +50,6 @@ fun DashboardScreen(
     val upcomingEvents = allTasks.filter {
         (it.taskType == TaskType.EVENT || it.taskType == TaskType.CLASS) && it.dueDate != todayStr
     }.take(3)
-
     Scaffold(
         bottomBar = { BottomNavBar(navController) }
     ) { padding ->
