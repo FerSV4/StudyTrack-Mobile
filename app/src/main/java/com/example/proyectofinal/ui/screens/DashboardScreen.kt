@@ -15,6 +15,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -36,20 +37,24 @@ fun DashboardScreen(
     navController: NavController,
     userPrefs: UserPreferencesRepository
 ) {
+    val context = LocalContext.current
     val viewModel: TaskViewModel = viewModel(
-        factory = TaskViewModelFactory(userPrefs)
+        factory = TaskViewModelFactory(userPrefs, context)
     )
 
     val allTasks by viewModel.tasks.collectAsState()
     val userName by userPrefs.userName.collectAsState(initial = "Estudiante")
 
     val todayStr = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
-
     val todaysTasks = allTasks.filter { it.dueDate == todayStr }
-
     val upcomingEvents = allTasks.filter {
         (it.taskType == TaskType.EVENT || it.taskType == TaskType.CLASS) && it.dueDate != todayStr
     }.take(3)
+
+    fun navigateToTasks() {
+        navController.navigate("tasks")
+    }
+
     Scaffold(
         bottomBar = { BottomNavBar(navController) }
     ) { padding ->
@@ -90,30 +95,40 @@ fun DashboardScreen(
                         item {
                             Text(
                                 "¡Nada para hoy! 🎉",
-                                color = Color.Gray,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                                 modifier = Modifier.padding(8.dp)
                             )
                         }
                     } else {
                         items(todaysTasks) { task ->
-                            // Reutilizamos la tarjeta en modo "solo lectura"
-                            TaskItemCard(task, {}, {}, {})
+                            TaskItemCard(
+                                task = task,
+                                onItemClick = { navigateToTasks() },
+                                onStatusChange = { viewModel.toggleTaskStatus(it) },
+                                onDelete = { viewModel.deleteTask(it) }
+                            )
                         }
                     }
 
+                    // SECCIÓN EVENTOS PRÓXIMOS
                     item { SectionHeader("Próximos Eventos") }
 
                     if (upcomingEvents.isEmpty()) {
                         item {
                             Text(
                                 "Sin eventos próximos",
-                                color = Color.Gray,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                                 modifier = Modifier.padding(8.dp)
                             )
                         }
                     } else {
                         items(upcomingEvents) { event ->
-                            TaskItemCard(event, {}, {}, {})
+                            TaskItemCard(
+                                task = event,
+                                onItemClick = { navigateToTasks() },
+                                onStatusChange = { viewModel.toggleTaskStatus(it) },
+                                onDelete = { viewModel.deleteTask(it) }
+                            )
                         }
                     }
 
@@ -146,12 +161,12 @@ fun SectionHeader(title: String) {
             text = title,
             fontWeight = FontWeight.Bold,
             fontSize = 18.sp,
-            color = Color.Gray
+            color = MaterialTheme.colorScheme.onSurface
         )
         Icon(
             Icons.Default.ChevronRight,
             contentDescription = null,
-            tint = Color.Gray
+            tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
         )
     }
 }
@@ -169,7 +184,7 @@ fun QuickAccessButton(
         onClick = onClick,
         modifier = modifier.height(80.dp),
         colors = CardDefaults.cardColors(
-            containerColor = color.copy(alpha = 0.4f)
+            containerColor = color.copy(alpha = 0.5f)
         ),
         shape = RoundedCornerShape(12.dp)
     ) {
@@ -178,8 +193,10 @@ fun QuickAccessButton(
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Icon(icon, contentDescription = null, tint = Color.DarkGray)
-            Text(text, fontSize = 12.sp, fontWeight = FontWeight.Medium)
+            val contentColor = MaterialTheme.colorScheme.onSurface
+
+            Icon(icon, contentDescription = null, tint = contentColor.copy(alpha = 0.8f))
+            Text(text, fontSize = 14.sp, fontWeight = FontWeight.Medium, color = contentColor.copy(alpha = 0.8f))
         }
     }
 }

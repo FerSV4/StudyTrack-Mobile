@@ -1,56 +1,59 @@
 package com.example.proyectofinal.data
 
+import android.util.Log
 import com.example.proyectofinal.model.Task
-import io.github.jan.supabase.postgrest.from
-//Repositorio de tareas
+import io.github.jan.supabase.postgrest.postgrest
+
 class TaskRepository {
 
-    suspend fun getTasks(email: String): List<Task> {
+    suspend fun getTasks(userEmail: String): List<Task> {
         return try {
-            SupabaseClient.client
-                .from("tasks")
+            SupabaseClient.client.postgrest["tasks"]
                 .select {
                     filter {
-                        eq("user_email", email)
+                        eq("user_email", userEmail)
                     }
-                }
-                .decodeList<Task>()
+                }.decodeList<Task>()
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e("TaskRepository", "Error al cargar la tarea", e)
             emptyList()
         }
     }
 
-    suspend fun createTask(task: Task) {
-        try {
-            SupabaseClient.client.from("tasks").insert(task)
+    suspend fun createTask(task: Task): Task? {
+        return try {
+            SupabaseClient.client.postgrest["tasks"].insert(task) {
+                select()
+            }.decodeSingleOrNull<Task>()
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e("TaskRepository", "Error al crear la tarea", e)
+            null
         }
     }
 
     suspend fun updateTask(task: Task) {
         try {
-            val id = task.id ?: return
-
-            SupabaseClient.client
-                .from("tasks")
-                .update(task) {
-                    filter { eq("id", id) }
+            task.id?.let { id ->
+                SupabaseClient.client.postgrest["tasks"].update(task) {
+                    filter {
+                        eq("id", id)
+                    }
                 }
+            }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e("TaskRepository", "Error al actualizar tarea", e)
         }
     }
+
     suspend fun deleteTask(taskId: Int) {
         try {
-            SupabaseClient.client
-                .from("tasks")
-                .delete {
-                    filter { eq("id", taskId) }
+            SupabaseClient.client.postgrest["tasks"].delete {
+                filter {
+                    eq("id", taskId)
                 }
+            }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e("TaskRepository", "Error eliminando la tarea", e)
         }
     }
 }
