@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -19,6 +20,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -43,11 +45,11 @@ fun CalendarScreen(
     navController: NavController,
     userPrefs: UserPreferencesRepository
 ) {
-    val viewModel: TaskViewModel = viewModel(factory = TaskViewModelFactory(userPrefs))
+    val context = LocalContext.current
+    val viewModel: TaskViewModel = viewModel(factory = TaskViewModelFactory(userPrefs, context))
     val allTasks by viewModel.tasks.collectAsState()
 
     var currentYearMonth by remember { mutableStateOf(YearMonth.now()) }
-
     var selectedDate by remember { mutableStateOf(LocalDate.now()) }
 
     val selectedDateStr = selectedDate.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
@@ -203,7 +205,7 @@ fun CalendarScreen(
 
             Surface(
                 modifier = Modifier.fillMaxSize(),
-                color = MaterialTheme.colorScheme.background, // Fondo adaptativo
+                color = MaterialTheme.colorScheme.background,
                 shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {

@@ -16,6 +16,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
@@ -44,8 +45,9 @@ fun TaskListScreen(
     navController: NavController,
     userPrefs: UserPreferencesRepository
 ) {
+    val context = LocalContext.current
     val viewModel: TaskViewModel = viewModel(
-        factory = TaskViewModelFactory(userPrefs)
+        factory = TaskViewModelFactory(userPrefs, context)
     )
 
     val taskList by viewModel.tasks.collectAsState()
@@ -360,7 +362,7 @@ fun TaskItemCard(
                 onCheckedChange = { onStatusChange(task) },
                 colors = CheckboxDefaults.colors(
                     checkedColor = Color(0xFF4CAF50),
-                    uncheckedColor = Color.Gray
+                    uncheckedColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                 )
             )
 
@@ -375,6 +377,7 @@ fun TaskItemCard(
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 Spacer(modifier = Modifier.height(4.dp))
+
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Surface(color = TagPurple.copy(alpha = 0.3f), shape = RoundedCornerShape(4.dp)) {
                         Text(text = task.subject, modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp), style = MaterialTheme.typography.labelSmall, color = PrimaryBlue)
@@ -396,6 +399,7 @@ fun TaskItemCard(
                     }
                 }
             }
+
             IconButton(onClick = { onDelete(task) }) {
                 Icon(Icons.Default.Delete, contentDescription = "Borrar", tint = Color.Red.copy(alpha = 0.6f))
             }

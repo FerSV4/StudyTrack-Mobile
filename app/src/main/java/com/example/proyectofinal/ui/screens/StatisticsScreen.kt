@@ -2,11 +2,9 @@ package com.example.proyectofinal.ui.screens
 
 import android.os.Build
 import androidx.annotation.RequiresApi
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
@@ -16,7 +14,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -36,7 +34,8 @@ fun StatisticsScreen(
     navController: NavController,
     userPrefs: UserPreferencesRepository
 ) {
-    val viewModel: TaskViewModel = viewModel(factory = TaskViewModelFactory(userPrefs))
+    val context = LocalContext.current
+    val viewModel: TaskViewModel = viewModel(factory = TaskViewModelFactory(userPrefs, context))
     val taskList by viewModel.tasks.collectAsState()
 
     val totalTasks = taskList.size
@@ -57,7 +56,11 @@ fun StatisticsScreen(
         bottomBar = { BottomNavBar(navController) }
     ) { padding ->
         LazyColumn(
-            modifier = Modifier.padding(padding).fillMaxSize().background(MaterialTheme.colorScheme.background).padding(16.dp),
+            modifier = Modifier
+                .padding(padding)
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background)
+                .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             item {
@@ -95,7 +98,10 @@ fun StatisticsScreen(
                                 Spacer(modifier = Modifier.height(6.dp))
                                 LinearProgressIndicator(
                                     progress = subjProgress,
-                                    modifier = Modifier.fillMaxWidth().height(8.dp).clip(RoundedCornerShape(4.dp)),
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(8.dp)
+                                        .clip(RoundedCornerShape(4.dp)),
                                     color = PrimaryBlue,
                                     trackColor = Color.LightGray.copy(alpha = 0.3f)
                                 )
@@ -124,7 +130,10 @@ fun GeneralProgressCard(percentage: Int, completed: Int, total: Int) {
                 Spacer(modifier = Modifier.width(16.dp))
                 LinearProgressIndicator(
                     progress = percentage / 100f,
-                    modifier = Modifier.fillMaxWidth().height(12.dp).clip(RoundedCornerShape(6.dp)),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(12.dp)
+                        .clip(RoundedCornerShape(6.dp)),
                     color = StatBlue,
                     trackColor = Color(0xFFE3F2FD)
                 )
