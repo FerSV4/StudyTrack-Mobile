@@ -1,8 +1,8 @@
 package com.example.proyectofinal.model
 
 data class SettingsState(
-    val userName: String = "Fernando Sejas",
-    val userEmail: String = "f.sejas@universidad.edu.bo",
+    val userName: String = "",
+    val userEmail: String = "",
     val notificationsPush: Boolean = false,
     val notificationsEmail: Boolean = false,
     val alertsExams: Boolean = true,
