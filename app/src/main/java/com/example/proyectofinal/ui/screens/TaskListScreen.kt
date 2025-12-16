@@ -375,7 +375,6 @@ fun TaskItemCard(
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 Spacer(modifier = Modifier.height(4.dp))
-
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Surface(color = TagPurple.copy(alpha = 0.3f), shape = RoundedCornerShape(4.dp)) {
                         Text(text = task.subject, modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp), style = MaterialTheme.typography.labelSmall, color = PrimaryBlue)
