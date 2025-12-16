@@ -29,15 +29,24 @@ class TaskViewModel(
     val tasks: StateFlow<List<Task>> = _tasks.asStateFlow()
 
     init {
-        loadTasks()
+        viewModelScope.launch {
+            userPrefs.userEmail.collect { email ->
+                if (email.isBlank()) {
+                    _tasks.value = emptyList()
+                } else {
+                    loadTasks()
+                }
+            }
+        }
     }
 
     fun loadTasks() {
         viewModelScope.launch {
             val email = userPrefs.userEmail.first()
-
-            val result = repository.getTasks(email)
-            _tasks.value = result
+            if (email.isNotBlank()) {
+                val result = repository.getTasks(email)
+                _tasks.value = result
+            }
         }
     }
 
@@ -45,6 +54,8 @@ class TaskViewModel(
     fun addTask(title: String, subject: String, description: String, priority: Priority, dueDate: String, taskType: TaskType) {
         viewModelScope.launch {
             val email = userPrefs.userEmail.first()
+            if (email.isBlank()) return@launch
+
             val newTask = Task(
                 title = title,
                 subject = subject,
@@ -70,9 +81,7 @@ class TaskViewModel(
     fun updateTask(task: Task) {
         viewModelScope.launch {
             repository.updateTask(task)
-
             NotificationScheduler.scheduleNotification(context, task)
-
             loadTasks()
         }
     }
@@ -84,7 +93,6 @@ class TaskViewModel(
 
             repository.updateTask(updatedTask)
 
-            // Si se completó, podríamos cancelar la notificación
             if (newStatus == TaskStatus.COMPLETED && task.id != null) {
                 NotificationScheduler.cancelNotification(context, task.id)
             }
@@ -97,7 +105,6 @@ class TaskViewModel(
         viewModelScope.launch {
             task.id?.let { id ->
                 repository.deleteTask(id)
-                // 5. Cancelamos la notificación al borrar
                 NotificationScheduler.cancelNotification(context, id)
                 loadTasks()
             }
@@ -105,7 +112,6 @@ class TaskViewModel(
     }
 }
 
-// 6. Actualizamos la Factory para recibir Contexto
 class TaskViewModelFactory(
     private val userPrefs: UserPreferencesRepository,
     private val context: Context
