@@ -397,7 +397,6 @@ fun TaskItemCard(
                     }
                 }
             }
-
             IconButton(onClick = { onDelete(task) }) {
                 Icon(Icons.Default.Delete, contentDescription = "Borrar", tint = Color.Red.copy(alpha = 0.6f))
             }
