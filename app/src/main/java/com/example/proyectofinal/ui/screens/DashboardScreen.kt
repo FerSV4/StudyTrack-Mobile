@@ -35,12 +35,9 @@ import java.time.format.DateTimeFormatter
 @Composable
 fun DashboardScreen(
     navController: NavController,
-    userPrefs: UserPreferencesRepository
+    userPrefs: UserPreferencesRepository,
+    viewModel: TaskViewModel
 ) {
-    val context = LocalContext.current
-    val viewModel: TaskViewModel = viewModel(
-        factory = TaskViewModelFactory(userPrefs, context)
-    )
 
     val allTasks by viewModel.tasks.collectAsState()
     val userName by userPrefs.userName.collectAsState(initial = "Estudiante")
