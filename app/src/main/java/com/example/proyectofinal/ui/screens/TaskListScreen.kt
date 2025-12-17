@@ -43,12 +43,9 @@ enum class TaskFilter { ALL, PENDING, COMPLETED }
 @Composable
 fun TaskListScreen(
     navController: NavController,
-    userPrefs: UserPreferencesRepository
+    userPrefs: UserPreferencesRepository,
+    viewModel: TaskViewModel
 ) {
-    val context = LocalContext.current
-    val viewModel: TaskViewModel = viewModel(
-        factory = TaskViewModelFactory(userPrefs, context)
-    )
 
     val taskList by viewModel.tasks.collectAsState()
 
